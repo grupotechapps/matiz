@@ -1,0 +1,4 @@
+# app-ads.txt do Matiz
+# Publisher ID extraído dos ad units já configurados no app
+# (ca-app-pub-2276074599056683/...)
+google.com, pub-2276074599056683, DIRECT, f08c47fec0942fa0

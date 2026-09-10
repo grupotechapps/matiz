@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matiz — Extraia paletas de cor de qualquer foto</title>
+<meta name="description" content="Matiz extrai paletas de cor de fotos e exporta para CSS, JSON, Swift, Kotlin, PDF e mais. 100% offline.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf6f0;
+    --ink: #2b2622;
+    --ink-soft: #6b6058;
+    --rule: #e4dccf;
+    --rust: #c85a35;
+    --teal: #2e6f6b;
+    --mustard: #d1972f;
+    --plum: #6b3f52;
+    --sage: #74815f;
+    --card: #ffffff;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Source Serif 4', Georgia, serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, .wordmark, nav a, .btn, .swatch code {
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  code, .hex {
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  a { color: inherit; }
+
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 28px;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 28px 0;
+  }
+
+  .wordmark {
+    font-weight: 700;
+    font-size: 1.3rem;
+    letter-spacing: -0.01em;
+    text-decoration: none;
+    color: var(--ink);
+  }
+
+  header nav a {
+    text-decoration: none;
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+    margin-left: 28px;
+  }
+
+  header nav a:hover { color: var(--ink); }
+
+  .hero {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 56px;
+    align-items: center;
+    padding: 48px 0 88px;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.1rem, 4vw, 3.1rem);
+    line-height: 1.12;
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    margin: 0 0 22px;
+  }
+
+  .hero p.lede {
+    font-size: 1.15rem;
+    color: var(--ink-soft);
+    max-width: 46ch;
+    margin: 0 0 32px;
+  }
+
+  .btn-row { display: flex; gap: 14px; flex-wrap: wrap; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 22px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-decoration: none;
+    border: 1px solid transparent;
+  }
+
+  .btn-primary {
+    background: var(--rust);
+    color: #fff9f5;
+  }
+
+  .btn-primary:hover { background: #b04e2c; }
+
+  .btn-ghost {
+    border-color: var(--rule);
+    color: var(--ink);
+  }
+
+  .btn-ghost:hover { border-color: var(--ink-soft); }
+
+  /* A tira de swatches é o elemento visual central — literal, não
+     decorativo: é exatamente o que o app produz a partir de uma
+     foto. Cada bloco tem sua cor e o hex correspondente, como
+     apareceria dentro do próprio Matiz. */
+  .palette-strip {
+    display: flex;
+    flex-direction: column;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 18px 40px -18px rgba(43, 38, 34, 0.35);
+  }
+
+  .swatch {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 22px;
+    opacity: 0;
+    transform: translateX(14px);
+    animation: swatch-in 0.5s ease forwards;
+  }
+
+  .swatch:nth-child(1) { background: var(--rust); animation-delay: 0.05s; }
+  .swatch:nth-child(2) { background: var(--mustard); animation-delay: 0.15s; }
+  .swatch:nth-child(3) { background: var(--sage); animation-delay: 0.25s; }
+  .swatch:nth-child(4) { background: var(--teal); animation-delay: 0.35s; }
+  .swatch:nth-child(5) { background: var(--plum); animation-delay: 0.45s; }
+
+  @keyframes swatch-in {
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .swatch { animation: none; opacity: 1; transform: none; }
+  }
+
+  .swatch .name {
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 0.92rem;
+  }
+
+  .swatch code {
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 0.85rem;
+  }
+
+  section.features {
+    border-top: 1px solid var(--rule);
+    padding: 72px 0;
+  }
+
+  .features h2 {
+    font-size: 1.6rem;
+    font-weight: 500;
+    margin: 0 0 48px;
+    max-width: 32ch;
+  }
+
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 40px 48px;
+  }
+
+  .feature h3 {
+    font-size: 1.05rem;
+    font-weight: 500;
+    margin: 0 0 10px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  .feature h3 .hex {
+    font-size: 0.75rem;
+    color: var(--ink-soft);
+    font-weight: 400;
+  }
+
+  .feature p {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 0.98rem;
+    max-width: 42ch;
+  }
+
+  section.offline {
+    border-top: 1px solid var(--rule);
+    padding: 64px 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: center;
+  }
+
+  section.offline h2 {
+    font-size: 1.4rem;
+    font-weight: 500;
+    margin: 0 0 14px;
+  }
+
+  section.offline p {
+    color: var(--ink-soft);
+    margin: 0;
+  }
+
+  footer {
+    border-top: 1px solid var(--rule);
+    padding: 36px 0 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 0.88rem;
+    color: var(--ink-soft);
+  }
+
+  footer .links a {
+    text-decoration: none;
+    color: var(--ink-soft);
+    margin-left: 20px;
+  }
+
+  footer .links a:hover { color: var(--ink); }
+
+  @media (max-width: 760px) {
+    .hero { grid-template-columns: 1fr; padding-bottom: 56px; }
+    .feature-grid { grid-template-columns: 1fr; }
+    section.offline { grid-template-columns: 1fr; }
+    footer { flex-direction: column; align-items: flex-start; }
+    footer .links a { margin-left: 0; margin-right: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <a class="wordmark" href="#top">Matiz</a>
+    <nav>
+      <a href="#recursos">Recursos</a>
+      <a href="https://grupotechapps.github.io/matiz/privacy_policy_1.html">Privacidade</a>
+    </nav>
+  </header>
+
+  <section class="hero" id="top">
+    <div>
+      <h1>Toda foto guarda uma paleta de cores esperando pra sair.</h1>
+      <p class="lede">
+        Escolha uma foto da galeria e o Matiz extrai as cores dela
+        automaticamente. Ajuste, trave o que quiser manter e exporte
+        pra onde precisar — CSS, JSON, Swift, Kotlin, PDF ou modelos
+        prontos pra redes sociais.
+      </p>
+      <div class="btn-row">
+        <!-- Substituir pelo link real da ficha na Play Store -->
+        <a class="btn btn-primary" href="https://play.google.com/store/apps/details?id=com.grupotechapps.matiz">
+          Disponível no Google Play
+        </a>
+        <a class="btn btn-ghost" href="#recursos">Ver recursos</a>
+      </div>
+    </div>
+
+    <div class="palette-strip" aria-hidden="true">
+      <div class="swatch">
+        <span class="name">Bloody Rust</span>
+        <code>#C85A35</code>
+      </div>
+      <div class="swatch">
+        <span class="name">Golden Hour</span>
+        <code>#D1972F</code>
+      </div>
+      <div class="swatch">
+        <span class="name">Sage Field</span>
+        <code>#74815F</code>
+      </div>
+      <div class="swatch">
+        <span class="name">Marker Blue</span>
+        <code>#2E6F6B</code>
+      </div>
+      <div class="swatch">
+        <span class="name">Zinfandel</span>
+        <code>#6B3F52</code>
+      </div>
+    </div>
+  </section>
+
+  <section class="features" id="recursos">
+    <h2>Do clique na foto ao arquivo pronto pro seu projeto.</h2>
+    <div class="feature-grid">
+      <div class="feature">
+        <h3>Extrair e regenerar <span class="hex">#01</span></h3>
+        <p>
+          Cinco cores por foto, geradas automaticamente. Não gostou?
+          Gere outra combinação da mesma imagem quantas vezes quiser.
+        </p>
+      </div>
+      <div class="feature">
+        <h3>Travar e editar <span class="hex">#02</span></h3>
+        <p>
+          Gosta de uma cor mas não das outras? Trave ela e regenere
+          só o resto. Ou digite um hex específico à mão.
+        </p>
+      </div>
+      <div class="feature">
+        <h3>Exportar em qualquer formato <span class="hex">#03</span></h3>
+        <p>
+          CSS, SCSS, JSON, Tailwind, Swift, Kotlin, ASE, PDF, imagem —
+          ou modelos prontos pra Stories, posts e mais.
+        </p>
+      </div>
+      <div class="feature">
+        <h3>Checar acessibilidade <span class="hex">#04</span></h3>
+        <p>
+          Contraste WCAG entre as cores da paleta e simulação de
+          daltonismo, direto na tela de cada paleta.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="offline">
+    <div>
+      <h2>100% offline, sempre.</h2>
+      <p>
+        Nenhuma foto sai do seu aparelho. A extração de cores acontece
+        localmente — sem internet, sem enviar imagem pra servidor
+        nenhum.
+      </p>
+    </div>
+    <div>
+      <h2>Organize do seu jeito.</h2>
+      <p>
+        Marque paletas favoritas e agrupe em coleções — por projeto,
+        por cliente, ou como fizer mais sentido pra você.
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    <span>&copy; 2026 Matiz. Todos os direitos reservados.</span>
+    <span class="links">
+      <a href="https://grupotechapps.github.io/matiz/privacy_policy_1.html">Política de Privacidade</a>
+      <a href="terms-of-use.html">Termos de Uso</a>
+      <a href="mailto:grupotechapps.adm@gmail.com">Contato</a>
+    </span>
+  </footer>
+</div>
+
+</body>
+</html>
